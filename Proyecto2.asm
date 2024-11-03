@@ -7,7 +7,7 @@
 	ruta: .string "prueba.txt"
 	errorLectura: .string "No se ha podido abrir el archivo"
 	
-	matrix: .space 400                   # Reservamos espacio para una matriz de 5x5 de enteros (4 bytes por cada posición)
+	matrix: .space 1296                   # Reservamos espacio para una matriz de 5x5 de enteros (4 bytes por cada posición) matriz maxima de 9*9 y eso por los 16 bytes de la cadena 1296
 	newline: .string "\n"                # Cadena para nueva línea
 	space: .string " "                   # Espacio entre números
 	text: .string "A-C B-C C-C D-C"      # Definimos el string "A-C B-C C-C D-C"
@@ -28,7 +28,6 @@ abrirArchivo:
 	blt a0, zero, imprimirErrorLectura
 	mv s2, a0  	#guardamos en s2 el descriptor del archivo y si existe tambien un error
 
-
 cicloLectura:
 	mv a0, s2
 	mv a1, s0	 				#mandamos una direccion de memoria para guardar lo que venga
@@ -40,22 +39,42 @@ cicloLectura:
 	mv t0, a0 					#usamos registro T para contenido del archivo 
 	add t1, s0, a0 				#sumamos la cantidad de bytes que leyo
 	sb zero, 0(t1)
-	
-	mv a0, s0					#asignamos lo que vamos a aimprimir
+
+	mv a0, s0					#asignamos lo que vamos a imprimir
 	li a7, 4					#parametro para imprimir
 	ecall
 	
 	beq t0, s1, cicloLectura
 
+	# Procesar los dos números que nos interesan
+	la t1, buffer               # t1 apunta al inicio del buffer
+
+	# Ignorar el primer número
+	lb t2, 1(t1)                # Cargar segundo número (05)
+	lb t3, 4(t1)                # Cargar cuarto número (05)
+
+	# Convertir caracteres a enteros
+	li t4, '0'                  # Cargar el valor ASCII de '0' en t4
+	sub t2, t2, t4              # Convertir a entero (caracter - '0')
+	sub t3, t3, t4              # Convertir a entero (caracter - '0')
+	
+	# Guardar los enteros en registros
+	mv s3, t2                   # Guardar primer número en s3
+	mv s4, t3                   # Guardar segundo número en s4
 
 
-    la t1, matrix                    # t1 apunta al inicio de la matriz
-    li t2, 400                       # t2 contiene el tamaño total de la matriz en bytes
-    la t3, text                      # t3 apunta a la cadena "A-C B-C C-C D-C"
-
+	# Aquí continúa el proceso para llenar la matriz
+	la t1, matrix                    # t1 apunta al inicio de la matriz
+	mul t2, s4, s4                   # t2 = s4 * s4
+	li t3, 16                        # Cargar el valor constante 16 en t3
+	mul t2, t2, t3                   # t2 = t2 * 16
+	li t3, 0   # Limpia el registro t0 poniendo 0 en él
+	la t3, text                      # t4 apunta a la cadena "A-C B-C C-C D-C"
+    
     # Llenar la matriz 5x5 con "A-C B-C C-C D-C" en cada posición
 fill_matrix:
     li t4, 16                        # Número de bytes en cada cadena
+    
 copy_text:
     lb t5, 0(t3)                     # Cargar el byte actual de "A-C B-C C-C D-C" en t5
     sb t5, 0(t1)                     # Guardar el byte en la posición actual de la matriz
@@ -73,8 +92,9 @@ copy_text:
     la t1, matrix
 
     # Imprimir la matriz 5x5
+    # Imprimir la matriz 5x5
 print_matrix:
-    li t3, 5                         # Contador para 5 elementos por fila
+    mv t3, s3                         # Usar el registro s3 como contador para los elementos por fila
 print_row:
     mv a0, t1                        # Cargar la dirección actual de la cadena en a0
     li a7, 4                         # Código de syscall para imprimir cadena
@@ -97,14 +117,11 @@ print_row:
     # Terminar el programa
     li a7, 10                        # Código de syscall para terminar el programa
     ecall
-	
-	
-	
+
 cerrarArchivo:
 	mv a0, s2 #Guardamos el descriptor del archivo
 	li a7, 57 #Desciptor del archivo
 	ecall
-
 
 imprimirErrorLectura:
 	la a0, errorLectura
@@ -114,4 +131,3 @@ imprimirErrorLectura:
 finalizar:
 	li a7, 10
 	ecall
-
