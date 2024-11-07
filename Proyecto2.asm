@@ -9,8 +9,9 @@
 	
 	matrix: .space 1296                   # Reservamos espacio para una matriz de 5x5 de enteros (4 bytes por cada posición) matriz maxima de 9*9 y eso por los 16 bytes de la cadena 1296
 	newline: .string "\n"                # Cadena para nueva línea
-	space: .string " "                   # Espacio entre números
+	space: .string " | "                   # Espacio entre números
 	text: .string "A-C B-C C-C D-C"      # Definimos el string "A-C B-C C-C D-C"
+	iniciobuffer: .string "Indicaciones de camino: "
 	
 .text #Segmento de Codigo
 proyecto: #En esta etiqueta empieza nuestro programa
@@ -45,6 +46,10 @@ cicloLectura:
 	ecall
 	
 	beq t0, s1, cicloLectura
+    	
+    	la a0, newline                   # Imprimir salto de línea
+    	li a7, 4                         # Código de syscall para imprimir cadena
+    	ecall
 
 	# Procesar los dos números que nos interesan
 	la t1, buffer               # t1 apunta al inicio del buffer
@@ -99,6 +104,10 @@ print_row:
     mv a0, t1                        # Cargar la dirección actual de la cadena en a0
     li a7, 4                         # Código de syscall para imprimir cadena
     ecall                            # Llamada de sistema para imprimir el string
+    
+    la a0, space                   # Imprimir un espacio entre cada columna
+    li a7, 4                         # Código de syscall para imprimir cadena
+    ecall
 
     addi t1, t1, 16                  # Avanzamos al siguiente string en la matriz (16 bytes por cadena)
     addi t3, t3, -1                  # Decrementamos el contador de fila
@@ -113,10 +122,34 @@ print_row:
     la t5, matrix                    # Reiniciamos t5 con el inicio de la matriz
     sub t6, t1, t5                   # Calculamos cuántos bytes hemos recorrido
     blt t6, t2, print_matrix         # Si no hemos llegado al final de la matriz, repetir
-
-    # Terminar el programa
-    li a7, 10                        # Código de syscall para terminar el programa
+    
+    la a0, newline                   # Imprimir texto
+    li a7, 4                         # Código de syscall para imprimir cadena
     ecall
+
+    
+modificarMatriz:
+	
+	la a0, iniciobuffer                   # Imprimir texto
+    	li a7, 4                         # Código de syscall para imprimir cadena
+    	ecall
+
+	la t1, buffer
+	addi t1, t1, 6
+
+	#imprimir
+	mv a0, t1
+	li a7, 4
+	ecall
+	
+	la a0, newline                   # Imprimir salto de línea
+    	li a7, 4                         # Código de syscall para imprimir cadena
+    	ecall
+    	
+    	 # Terminar el programa
+    	li a7, 10                        # Código de syscall para terminar el programa
+   	ecall
+
 
 cerrarArchivo:
 	mv a0, s2 #Guardamos el descriptor del archivo
